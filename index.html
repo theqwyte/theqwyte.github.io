@@ -15,16 +15,14 @@
 <style>
   :root{
     --ink:#050505;
-    --smoke:#1c1a18;
-    --ash:#2e2a26;
     --gold:#E8B11C;
     --gold-deep:#b9850a;
     --blood:#B3121B;
-    --paper:#E6DcC6;
+    --paper:#E6DCC6;
     --paper-dim:#a49a86;
   }
   *{box-sizing:border-box;margin:0;padding:0}
-  html,body{background:var(--ink);color:var(--paper)}
+  html,body{background:var(--ink);color:var(--paper);overscroll-behavior:none}
   body{
     min-height:100svh;
     font-family:"Kanit",system-ui,sans-serif;
@@ -32,181 +30,167 @@
     -webkit-tap-highlight-color:transparent;
   }
 
-  /* ---------- background: ink wash + grain ---------- */
-  .bg{position:fixed;inset:0;z-index:0;pointer-events:none}
+  /* Background is pinned to the LARGE viewport height, so it does not
+     rescale when the iOS Safari toolbar shows / hides while scrolling. */
+  .bg,.grain{
+    position:fixed;left:0;top:0;width:100%;
+    height:100vh;height:100lvh;
+    pointer-events:none;
+  }
+  .bg{z-index:0}
   .bg svg{width:100%;height:100%;display:block}
   .grain{
-    position:fixed;inset:-50%;z-index:1;pointer-events:none;opacity:.13;
+    z-index:1;opacity:.13;
     background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   }
 
   main{
     position:relative;z-index:2;
-    width:min(100%,460px);
+    width:min(100%,520px);
     margin:0 auto;
-    padding:clamp(28px,7vh,72px) 18px 40px;
-    padding-bottom:calc(40px + env(safe-area-inset-bottom));
+    padding:clamp(18px,4vh,48px) 0 28px;
+    padding-bottom:calc(28px + env(safe-area-inset-bottom));
   }
 
   /* ---------- hero: painted name ---------- */
-  .hero{position:relative;height:250px;margin-bottom:8px}
+  .hero{position:relative;height:190px;margin:0 18px}
   .stroke{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
-  .stroke .gold{
-    stroke-dasharray:1200;stroke-dashoffset:1200;
-    animation:paint 0.85s cubic-bezier(.7,0,.2,1) .15s forwards;
-  }
-  .stroke .gold-2{
-    stroke-dasharray:900;stroke-dashoffset:900;
-    animation:paint .6s cubic-bezier(.7,0,.2,1) .55s forwards;
-  }
-  .stroke .blood{
-    stroke-dasharray:500;stroke-dashoffset:500;
-    animation:paint .35s cubic-bezier(.8,0,.2,1) 1.15s forwards;
-  }
+  .stroke .gold{stroke-dasharray:1200;stroke-dashoffset:1200;animation:paint .85s cubic-bezier(.7,0,.2,1) .15s forwards}
+  .stroke .gold-2{stroke-dasharray:900;stroke-dashoffset:900;animation:paint .6s cubic-bezier(.7,0,.2,1) .55s forwards}
+  .stroke .blood{stroke-dasharray:500;stroke-dashoffset:500;animation:paint .35s cubic-bezier(.8,0,.2,1) 1.15s forwards}
   .stroke .drop{opacity:0;animation:pop .25s ease-out forwards}
   @keyframes paint{to{stroke-dashoffset:0}}
   @keyframes pop{from{opacity:0;transform:scale(.2)}to{opacity:1;transform:scale(1)}}
 
   .name{
-    position:absolute;left:0;right:0;top:62px;
+    position:absolute;left:0;right:0;top:34px;
     text-align:center;
     font-family:"Rubik Dirt",Impact,sans-serif;
-    font-size:clamp(84px,27vw,124px);
-    line-height:1;
-    color:var(--ink);
-    letter-spacing:.01em;
-    transform:rotate(-6deg) scale(1.6);
-    opacity:0;
+    font-size:clamp(80px,25vw,118px);
+    line-height:1;color:var(--ink);
+    transform:rotate(-6deg) scale(1.6);opacity:0;
     animation:stamp .32s cubic-bezier(.3,1.6,.5,1) .78s forwards;
     text-shadow:3px 3px 0 rgba(179,18,27,.55);
   }
   @keyframes stamp{to{opacity:1;transform:rotate(-6deg) scale(1)}}
-
   .tagline{
-    position:absolute;left:0;right:0;bottom:6px;
-    text-align:center;
-    font-weight:400;font-size:17px;color:var(--paper);
-    opacity:0;animation:fade .5s ease 1.3s forwards;
+    position:absolute;left:0;right:0;bottom:0;text-align:center;
+    font-size:17px;opacity:0;animation:fade .5s ease 1.3s forwards;
   }
   .tagline b{font-weight:600;color:var(--gold)}
   @keyframes fade{to{opacity:1}}
 
-  /* ---------- link slabs ---------- */
-  .links{
-    list-style:none;
-    display:grid;gap:16px;
-    perspective:900px;
+  /* ---------- tower select ---------- */
+  .select{
+    position:relative;margin-top:14px;
+    opacity:0;animation:rise .8s cubic-bezier(.2,1,.3,1) 1.4s forwards;
   }
-  .slab{
-    position:relative;display:flex;align-items:center;gap:16px;
-    min-height:78px;padding:14px 22px 14px 18px;
-    color:var(--paper);text-decoration:none;
+  @keyframes rise{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:none}}
+
+  .stage{
+    position:relative;height:360px;
+    perspective:900px;perspective-origin:50% 40%;
+    touch-action:pan-y;
+    user-select:none;-webkit-user-select:none;
+    cursor:grab;
+  }
+  .stage.dragging{cursor:grabbing}
+  .ring{position:absolute;inset:0;transform-style:preserve-3d}
+
+  .tower{
+    position:absolute;left:50%;bottom:0;
+    width:170px;height:340px;margin-left:-85px;
+    display:block;
     transform-style:preserve-3d;
-    transform-origin:50% 0;
-    transform:rotateX(-95deg);
-    opacity:0;
-    animation:swing .7s cubic-bezier(.2,1.4,.4,1) forwards;
-    animation-delay:calc(1.35s + var(--i) * .12s);
-    will-change:transform;
+    transform-origin:50% 100%;
+    will-change:transform,filter;
     outline:none;
+    text-decoration:none;
   }
-  @keyframes swing{
-    0%{opacity:0;transform:rotateX(-95deg)}
-    30%{opacity:1}
-    100%{opacity:1;transform:rotateX(0)}
-  }
-  /* painted plate behind content (rough edges via SVG filter) */
-  .slab::before{
-    content:"";position:absolute;inset:0;z-index:-1;
-    background:var(--plate,var(--smoke));
-    filter:url(#rough);
-    transform:translateZ(-1px) skewX(-6deg);
-    transition:background .2s;
-  }
-  /* red swipe that wipes across on press */
-  .slab::after{
-    content:"";position:absolute;inset:6px -4px;z-index:-1;
-    background:var(--blood);
-    filter:url(#rough);
-    transform:skewX(-6deg) scaleX(0);transform-origin:0 50%;
-    transition:transform .28s cubic-bezier(.7,0,.2,1);
-  }
-  .slab.pressed::after,.slab:focus-visible::after{transform:skewX(-6deg) scaleX(1)}
-  .slab:focus-visible{box-shadow:0 0 0 3px var(--gold)}
+  .tower svg{width:100%;height:100%;display:block;overflow:visible}
+  .tower .gate{transition:opacity .3s}
+  .tower.front .gate-glow{animation:breathe 2.4s ease-in-out infinite}
+  @keyframes breathe{50%{opacity:.55}}
+  .tower:focus-visible svg{filter:drop-shadow(0 0 0 var(--gold)) drop-shadow(0 0 6px var(--gold))}
 
-  .slab .icon{
-    flex:none;width:44px;height:44px;display:grid;place-items:center;
-    transform:translateZ(30px);
+  /* floor shadow / ink pool */
+  .floor{
+    position:absolute;left:50%;bottom:-18px;width:340px;height:60px;margin-left:-170px;
+    background:radial-gradient(ellipse at center,rgba(0,0,0,.85),transparent 70%);
   }
-  .slab .icon svg{width:34px;height:34px}
-  .slab .txt{display:grid;transform:translateZ(22px)}
-  .slab .label{
-    font-weight:800;font-style:italic;font-size:24px;line-height:1.05;letter-spacing:.01em;
-  }
-  .slab .sub{font-size:14px;color:var(--paper-dim);line-height:1.3}
-  .slab .glare{
-    position:absolute;inset:0;pointer-events:none;
-    background:radial-gradient(circle at var(--gx,50%) var(--gy,50%),rgba(255,230,160,.22),transparent 55%);
-    opacity:0;transition:opacity .2s;
-    transform:skewX(-6deg);
-  }
-  .slab.tilting .glare{opacity:1}
 
-  .slab.main{--plate:var(--gold);color:var(--ink)}
-  .slab.main .sub{color:#4a3a10}
-  .slab.main.pressed{color:var(--paper)}
-  .slab.main.pressed .sub{color:var(--paper)}
-  .slab.pressed .sub{color:var(--paper)}
-
-  .business{
-    margin-top:30px;text-align:center;
-    opacity:0;animation:fade .5s ease 2.1s forwards;
+  .caption{
+    text-align:center;margin-top:18px;min-height:74px;
   }
-  .business p{font-size:15px;color:var(--paper-dim);margin-bottom:10px}
-  .business a{
-    display:inline-flex;align-items:center;gap:10px;
-    padding:10px 22px;
-    font-weight:700;font-style:italic;font-size:19px;
-    color:var(--gold);text-decoration:none;
-    border:2px solid var(--gold);
-    transform:skewX(-6deg);
-    transition:background .2s,color .2s;
+  .caption .title{
+    font-weight:800;font-style:italic;font-size:30px;line-height:1.05;color:var(--gold);
   }
-  .business a span{transform:skewX(6deg);display:inline-flex;align-items:center;gap:10px}
-  .business a:hover,.business a:focus-visible{background:var(--gold);color:var(--ink);outline:none}
-  .business svg{width:20px;height:20px}
+  .caption .sub{font-size:15px;color:var(--paper-dim);margin-top:4px}
+  .caption .title,.caption .sub{transition:opacity .15s}
+  .caption.swap .title,.caption.swap .sub{opacity:0}
 
-  footer{
-    margin-top:44px;text-align:center;font-size:13px;color:#6f675a;
-    opacity:0;animation:fade .5s ease 2.3s forwards;
+  .nav{
+    display:flex;justify-content:center;align-items:center;gap:20px;margin-top:12px;
+  }
+  .nav button{
+    width:48px;height:48px;border:0;background:none;color:var(--gold);cursor:pointer;
+    display:grid;place-items:center;border-radius:50%;
+  }
+  .nav button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+  .nav button svg{width:26px;height:26px}
+  .dots{display:flex;gap:10px}
+  .dots i{
+    width:10px;height:10px;background:var(--paper-dim);opacity:.4;
+    transform:rotate(45deg);transition:all .25s;
+  }
+  .dots i.on{background:var(--gold);opacity:1;transform:rotate(45deg) scale(1.3)}
+  .hint{text-align:center;font-size:13px;color:#7a7163;margin-top:10px}
+
+  /* ---------- enter transition ---------- */
+  .veil{
+    position:fixed;inset:0;z-index:20;pointer-events:none;
+    background:radial-gradient(circle at 50% 60%,var(--glow,#E8B11C) 0%,#000 55%);
+    opacity:0;transition:opacity .45s ease-in .25s;
+  }
+  body.entering .veil{opacity:1}
+  body.entering .hero,body.entering .caption,body.entering .nav,body.entering .hint{
+    opacity:0!important;transition:opacity .25s;
+  }
+  body.entering .tower:not(.front){opacity:0!important;transition:opacity .25s}
+  body.entering .tower.front{
+    transition:transform .75s cubic-bezier(.6,0,.9,.4)!important;
   }
 
   @media (prefers-reduced-motion:reduce){
-    *,*::before,*::after{animation-duration:.01ms!important;animation-delay:0s!important;transition:none!important}
+    *,*::before,*::after{animation-duration:.01ms!important;animation-delay:0s!important;transition-duration:.01ms!important}
     .stroke path{stroke-dashoffset:0!important}
   }
 </style>
 </head>
 <body>
 
-<!-- shared filters -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
-    <filter id="rough" x="-10%" y="-30%" width="120%" height="160%">
-      <feTurbulence type="fractalNoise" baseFrequency=".035 .5" numOctaves="3" seed="7" result="t"/>
-      <feDisplacementMap in="SourceGraphic" in2="t" scale="10" xChannelSelector="R" yChannelSelector="G"/>
-    </filter>
     <filter id="brush" x="-20%" y="-60%" width="140%" height="220%">
       <feTurbulence type="fractalNoise" baseFrequency=".02 .35" numOctaves="4" seed="3" result="t"/>
       <feDisplacementMap in="SourceGraphic" in2="t" scale="26" xChannelSelector="R" yChannelSelector="G"/>
     </filter>
+    <filter id="stone" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency=".06" numOctaves="3" seed="11" result="t"/>
+      <feDisplacementMap in="SourceGraphic" in2="t" scale="5" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <linearGradient id="wall" x1="0" x2="1">
+      <stop offset="0" stop-color="#3b342d"/>
+      <stop offset=".45" stop-color="#26211c"/>
+      <stop offset="1" stop-color="#14110f"/>
+    </linearGradient>
   </defs>
 </svg>
 
 <div class="bg" aria-hidden="true">
   <svg viewBox="0 0 400 800" preserveAspectRatio="xMidYMid slice">
     <defs>
-      <radialGradient id="wash" cx="50%" cy="20%" r="70%">
+      <radialGradient id="wash" cx="50%" cy="45%" r="70%">
         <stop offset="0" stop-color="#2a1210"/>
         <stop offset=".6" stop-color="#0d0807"/>
         <stop offset="1" stop-color="#050505"/>
@@ -215,113 +199,255 @@
     <rect width="400" height="800" fill="url(#wash)"/>
     <path d="M-40 700 C80 640 210 690 460 600" stroke="#1d1715" stroke-width="120" fill="none" filter="url(#brush)"/>
     <path d="M-30 120 C90 90 160 140 300 60" stroke="#170f0d" stroke-width="70" fill="none" filter="url(#brush)"/>
-    <g id="splat" fill="#B3121B" opacity=".55"></g>
+    <g id="splat" fill="#B3121B" opacity=".5"></g>
   </svg>
 </div>
 <div class="grain" aria-hidden="true"></div>
+<div class="veil" aria-hidden="true"></div>
 
 <main>
   <header class="hero">
-    <svg class="stroke" viewBox="0 0 420 250" aria-hidden="true">
-      <path class="gold" d="M10 150 C90 105 200 92 300 102 S 400 120 415 110"
-            stroke="var(--gold)" stroke-width="96" stroke-linecap="round" fill="none" filter="url(#brush)"/>
-      <path class="gold-2" d="M40 196 C140 170 250 166 380 178"
-            stroke="var(--gold-deep)" stroke-width="22" stroke-linecap="round" fill="none" filter="url(#brush)"/>
-      <path class="blood" d="M300 40 C330 56 352 74 372 104"
-            stroke="var(--blood)" stroke-width="14" stroke-linecap="round" fill="none" filter="url(#brush)"/>
-      <circle class="drop" style="animation-delay:1.45s;transform-origin:384px 124px" cx="384" cy="124" r="7" fill="var(--blood)"/>
-      <circle class="drop" style="animation-delay:1.52s;transform-origin:394px 146px" cx="394" cy="146" r="4" fill="var(--blood)"/>
-      <circle class="drop" style="animation-delay:1.58s;transform-origin:376px 152px" cx="376" cy="152" r="2.5" fill="var(--blood)"/>
+    <svg class="stroke" viewBox="0 0 420 190" aria-hidden="true">
+      <path class="gold" d="M10 112 C90 67 200 54 300 64 S 400 82 415 72"
+            stroke="var(--gold)" stroke-width="92" stroke-linecap="round" fill="none" filter="url(#brush)"/>
+      <path class="gold-2" d="M40 152 C140 128 250 124 380 136"
+            stroke="var(--gold-deep)" stroke-width="20" stroke-linecap="round" fill="none" filter="url(#brush)"/>
+      <path class="blood" d="M300 6 C330 22 352 40 372 70"
+            stroke="var(--blood)" stroke-width="13" stroke-linecap="round" fill="none" filter="url(#brush)"/>
+      <circle class="drop" style="animation-delay:1.45s;transform-origin:384px 90px" cx="384" cy="90" r="7" fill="var(--blood)"/>
+      <circle class="drop" style="animation-delay:1.52s;transform-origin:394px 112px" cx="394" cy="112" r="4" fill="var(--blood)"/>
     </svg>
     <h1 class="name">Qwyte</h1>
     <p class="tagline">Канал про <b>Mortal Kombat</b></p>
   </header>
 
-  <ul class="links">
-    <li>
-      <a class="slab main" style="--i:0" href="https://youtube.com/@qwyte" target="_blank" rel="noopener">
-        <span class="icon"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M9 6 L27 16 L9 26 Z" fill="currentColor"/></svg></span>
-        <span class="txt"><span class="label">YouTube</span><span class="sub">Полные видео и разборы</span></span>
-        <span class="glare"></span>
-      </a>
-    </li>
-    <li>
-      <a class="slab" style="--i:1" href="https://www.tiktok.com/@TheQwyte" target="_blank" rel="noopener">
-        <span class="icon"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M18 4 V21 a5 5 0 1 1 -5 -5" stroke="var(--gold)" stroke-width="3.5" fill="none" stroke-linecap="round"/><path d="M18 4 C19 9 22 11 27 11" stroke="var(--gold)" stroke-width="3.5" fill="none" stroke-linecap="round"/></svg></span>
-        <span class="txt"><span class="label">TikTok</span><span class="sub">Короткие моменты из каток</span></span>
-        <span class="glare"></span>
-      </a>
-    </li>
-    <li>
-      <a class="slab" style="--i:2" href="https://t.me/TheQwyte" target="_blank" rel="noopener">
-        <span class="icon"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M4 15 L28 5 L23 27 L15 20 L12 26 L11 19 Z" stroke="var(--gold)" stroke-width="2.6" stroke-linejoin="round" fill="none"/><path d="M11 19 L24 9" stroke="var(--gold)" stroke-width="2.6" stroke-linecap="round"/></svg></span>
-        <span class="txt"><span class="label">Telegram</span><span class="sub">Новости канала и анонсы</span></span>
-        <span class="glare"></span>
-      </a>
-    </li>
-  </ul>
-
-  <section class="business">
-    <p>По рекламе и сотрудничеству</p>
-    <a href="https://t.me/qwyt3" target="_blank" rel="noopener"><span>
-      <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M4 15 L28 5 L23 27 L15 20 L12 26 L11 19 Z" stroke="currentColor" stroke-width="3" stroke-linejoin="round" fill="none"/></svg>
-      Написать @qwyt3</span></a>
+  <section class="select" aria-label="Ссылки">
+    <div class="stage" id="stage">
+      <div class="floor"></div>
+      <div class="ring" id="ring"></div>
+    </div>
+    <div class="caption" id="caption" aria-live="polite">
+      <div class="title" id="capTitle"></div>
+      <div class="sub" id="capSub"></div>
+    </div>
+    <div class="nav">
+      <button id="prev" aria-label="Предыдущая башня"><svg viewBox="0 0 24 24"><path d="M15 4 L7 12 L15 20" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="dots" id="dots"></div>
+      <button id="next" aria-label="Следующая башня"><svg viewBox="0 0 24 24"><path d="M9 4 L17 12 L9 20" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>
+    <p class="hint">Листай башни и жми на ворота</p>
   </section>
-
-  <footer>© Qwyte</footer>
 </main>
 
 <script>
 (() => {
-  // random ink splatter in the background
-  const g = document.getElementById('splat');
-  const rnd = (a, b) => a + Math.random() * (b - a);
-  const clusters = [[340, 260], [60, 520], [300, 720]];
-  const ns = 'http://www.w3.org/2000/svg';
-  clusters.forEach(([cx, cy]) => {
-    for (let i = 0; i < 14; i++) {
-      const c = document.createElementNS(ns, 'circle');
-      const d = Math.pow(Math.random(), 1.8) * 70;
-      const a = Math.random() * Math.PI * 2;
-      c.setAttribute('cx', cx + Math.cos(a) * d);
-      c.setAttribute('cy', cy + Math.sin(a) * d);
-      c.setAttribute('r', Math.max(0.8, rnd(7, 0.5) * (1 - d / 90)));
-      g.appendChild(c);
-    }
+  const towers = [
+    { name: 'YouTube',  sub: 'Полные видео и разборы',      href: 'https://youtube.com/@qwyte',       glow: '#E8B11C',
+      icon: '<path d="M-9 -12 L13 0 L-9 12 Z" fill="currentColor"/>' },
+    { name: 'TikTok',   sub: 'Короткие моменты из каток',   href: 'https://www.tiktok.com/@TheQwyte', glow: '#e3402f',
+      icon: '<path d="M2 -14 V5 a6 6 0 1 1 -6 -6" stroke="currentColor" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M2 -14 C3 -8 7 -6 12 -6" stroke="currentColor" stroke-width="4" fill="none" stroke-linecap="round"/>' },
+    { name: 'Telegram', sub: 'Новости канала и анонсы',     href: 'https://t.me/TheQwyte',            glow: '#6cc4e8',
+      icon: '<path d="M-14 -1 L14 -12 L8 13 L-1 5 L-4 12 L-5 4 Z" stroke="currentColor" stroke-width="3" stroke-linejoin="round" fill="none"/>' },
+    { name: 'Сотрудничество', sub: 'Реклама и коллабы: @qwyt3', href: 'https://t.me/qwyt3',          glow: '#d9b46a',
+      icon: '<path d="M-14 2 L-6 -6 L0 -2 L6 -6 L14 2 M-6 -6 L-12 0 M6 -6 L12 0 M-8 4 L-2 10 M-3 1 L3 7 M2 -2 L8 4" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>' },
+  ];
+  const N = towers.length;
+
+  // ---------- tower SVG (original pagoda-style silhouette) ----------
+  const roof = (y, half, lift) =>
+    `<path d="M${85 - half} ${y} Q${85 - half * .55} ${y - 6} 85 ${y - lift} Q${85 + half * .55} ${y - 6} ${85 + half} ${y}
+      L${85 + half - 12} ${y + 8} L${85 - half + 12} ${y + 8} Z"
+      fill="#0a0807" stroke="var(--gold)" stroke-width="2.2" stroke-linejoin="round"/>`;
+
+  const towerSVG = (t, i) => `
+    <svg viewBox="0 0 170 340" aria-hidden="true">
+      <defs>
+        <radialGradient id="g${i}" cx="50%" cy="50%" r="50%">
+          <stop offset="0" stop-color="${t.glow}" stop-opacity=".75"/>
+          <stop offset=".5" stop-color="${t.glow}" stop-opacity=".25"/>
+          <stop offset="1" stop-color="${t.glow}" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <g filter="url(#stone)">
+        <!-- plinth -->
+        <path d="M8 340 L14 316 L156 316 L162 340 Z" fill="#1a1613"/>
+        <!-- tier 1 -->
+        <rect x="30" y="228" width="110" height="90" fill="url(#wall)"/>
+        ${roof(226, 74, 22)}
+        <!-- tier 2 -->
+        <rect x="42" y="150" width="86" height="70" fill="url(#wall)"/>
+        ${roof(148, 60, 18)}
+        <!-- tier 3 -->
+        <rect x="54" y="88" width="62" height="56" fill="url(#wall)"/>
+        ${roof(86, 46, 16)}
+        <!-- spire -->
+        <path d="M85 18 L92 70 L78 70 Z" fill="#0a0807" stroke="var(--gold)" stroke-width="2"/>
+        <circle cx="85" cy="16" r="5" fill="${t.glow}"/>
+        <!-- stone joints -->
+        <path d="M30 258 H140 M30 288 H140 M42 178 H128 M42 202 H128 M54 112 H116" stroke="#0e0c0a" stroke-width="2" opacity=".6"/>
+        <!-- windows -->
+        <rect x="76" y="100" width="18" height="26" rx="9" fill="${t.glow}" opacity=".55"/>
+      </g>
+      <!-- gate glow -->
+      <ellipse class="gate-glow" cx="85" cy="318" rx="70" ry="26" fill="url(#g${i})"/>
+      <!-- gate -->
+      <path class="gate" d="M62 318 V280 Q62 256 85 256 Q108 256 108 280 V318 Z" fill="${t.glow}"/>
+      <path d="M62 318 V280 Q62 256 85 256 Q108 256 108 280 V318" fill="none" stroke="#0a0807" stroke-width="4"/>
+      <!-- hanging banner with icon -->
+      <path d="M60 158 H110 V206 L85 196 L60 206 Z" fill="var(--blood)" filter="url(#stone)"/>
+      <g transform="translate(85 178) scale(.9)" style="color:var(--paper)">${t.icon}</g>
+    </svg>`;
+
+  // ---------- build ----------
+  const ring = document.getElementById('ring');
+  const dots = document.getElementById('dots');
+  const els = towers.map((t, i) => {
+    const a = document.createElement('a');
+    a.className = 'tower';
+    a.href = t.href;
+    a.setAttribute('aria-label', `${t.name}. ${t.sub}`);
+    a.innerHTML = towerSVG(t, i);
+    ring.appendChild(a);
+    dots.appendChild(document.createElement('i'));
+    return a;
   });
 
+  // ---------- layout (cover-flow in 3D) ----------
+  let pos = 0;               // fractional index currently in front
+  let target = 0;
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const wrap = k => ((k % N) + N + N / 2) % N - N / 2;   // -N/2 .. N/2
 
-  // 3D tilt following the pointer / finger + red swipe on press
-  document.querySelectorAll('.slab').forEach(el => {
-    el.addEventListener('animationend', () => {
-      el.style.animation = 'none';
-      el.style.opacity = 1;
-      el.style.transform = 'none';
-      el.style.transition = 'transform .25s cubic-bezier(.2,.9,.3,1)';
+  function layout() {
+    els.forEach((el, i) => {
+      const k = wrap(i - pos);
+      const ak = Math.abs(k);
+      const x = Math.sign(k) * Math.min(ak, 1.6) * 118;
+      const z = -ak * 210;
+      const ry = -Math.max(-1.4, Math.min(1.4, k)) * 38;
+      const s = 1 - Math.min(ak, 2) * .08;
+      el.style.transform = `translateX(${x}px) translateZ(${z}px) rotateY(${ry}deg) scale(${s})`;
+      el.style.zIndex = String(100 - Math.round(ak * 10));
+      el.style.filter = `brightness(${1 - Math.min(ak, 1.6) * .42})`;
+      el.style.opacity = ak > 1.7 ? Math.max(0, 1 - (ak - 1.7) * 3) : 1;
+      el.classList.toggle('front', ak < .5);
+      el.tabIndex = ak < .5 ? 0 : -1;
     });
+  }
 
-    const tilt = e => {
-      if (reduce) return;
-      const r = el.getBoundingClientRect();
-      const x = (e.clientX - r.left) / r.width;
-      const y = (e.clientY - r.top) / r.height;
-      el.style.setProperty('--gx', x * 100 + '%');
-      el.style.setProperty('--gy', y * 100 + '%');
-      el.style.transform =
-        `rotateY(${(x - .5) * 16}deg) rotateX(${(.5 - y) * 14}deg) translateZ(14px)`;
-      el.classList.add('tilting');
-    };
-    const reset = () => {
-      el.style.transform = 'none';
-      el.classList.remove('tilting', 'pressed');
-    };
+  const cap = document.getElementById('caption');
+  const capT = document.getElementById('capTitle');
+  const capS = document.getElementById('capSub');
+  let shown = -1;
+  function updateCaption() {
+    const idx = ((Math.round(pos) % N) + N) % N;
+    if (idx === shown) return;
+    shown = idx;
+    [...dots.children].forEach((d, i) => d.classList.toggle('on', i === idx));
+    cap.classList.add('swap');
+    setTimeout(() => {
+      capT.textContent = towers[idx].name;
+      capS.textContent = towers[idx].sub;
+      cap.classList.remove('swap');
+    }, 120);
+  }
 
-    el.addEventListener('pointermove', tilt);
-    el.addEventListener('pointerdown', e => { tilt(e); el.classList.add('pressed'); });
-    el.addEventListener('pointerleave', reset);
-    el.addEventListener('pointercancel', reset);
-    el.addEventListener('pointerup', () => setTimeout(reset, 350));
+  // smooth spring toward target
+  let raf = 0;
+  function animate() {
+    const d = target - pos;
+    pos += reduce ? d : d * .16;
+    if (Math.abs(d) < .001) pos = target;
+    layout(); updateCaption();
+    raf = pos !== target ? requestAnimationFrame(animate) : 0;
+  }
+  const go = t => { target = t; if (!raf) raf = requestAnimationFrame(animate); };
+
+  // ---------- drag / swipe ----------
+  const stage = document.getElementById('stage');
+  let startX = 0, startPos = 0, dragging = false, moved = 0, pid = null;
+  stage.addEventListener('pointerdown', e => {
+    if (document.body.classList.contains('entering')) return;
+    dragging = true; moved = 0; pid = e.pointerId;
+    startX = e.clientX; startPos = target;
+    cancelAnimationFrame(raf); raf = 0;
+    stage.classList.add('dragging');
+  });
+  window.addEventListener('pointermove', e => {
+    if (!dragging || e.pointerId !== pid) return;
+    const dx = e.clientX - startX;
+    moved = Math.max(moved, Math.abs(dx));
+    if (moved > 6) {
+      pos = target = startPos - dx / 150;
+      layout(); updateCaption();
+    }
+  });
+  window.addEventListener('pointerup', e => {
+    if (!dragging || e.pointerId !== pid) return;
+    dragging = false; stage.classList.remove('dragging');
+    if (moved > 6) go(Math.round(target));
+  });
+  window.addEventListener('pointercancel', () => {
+    if (!dragging) return;
+    dragging = false; stage.classList.remove('dragging'); go(Math.round(target));
+  });
+
+  // ---------- tap a tower ----------
+  els.forEach((el, i) => {
+    el.addEventListener('click', e => {
+      e.preventDefault();
+      if (moved > 6) return;                 // that was a swipe
+      if (!el.classList.contains('front')) { // bring it forward first
+        go(target + wrap(i - target));
+        return;
+      }
+      enter(el, towers[i]);
+    });
+  });
+
+  function enter(el, t) {
+    if (document.body.classList.contains('entering')) return;
+    document.body.style.setProperty('--glow', t.glow);
+    document.body.classList.add('entering');
+    // fly the camera through the gate (gate sits at ~84% height of the tower)
+    el.style.transformOrigin = '50% 84%';
+    requestAnimationFrame(() => {
+      el.style.transform = 'translateZ(820px) scale(1.4)';
+      el.style.filter = 'brightness(1.3)';
+    });
+    setTimeout(() => { location.href = t.href; }, reduce ? 50 : 820);
+  }
+
+  // coming back with the browser "back" button: reset the scene
+  window.addEventListener('pageshow', ev => {
+    if (!document.body.classList.contains('entering')) return;
+    document.body.classList.remove('entering');
+    els.forEach(el => { el.style.transformOrigin = ''; });
+    layout();
+  });
+
+  // ---------- buttons & keys ----------
+  document.getElementById('prev').onclick = () => go(Math.round(target) - 1);
+  document.getElementById('next').onclick = () => go(Math.round(target) + 1);
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowLeft') go(Math.round(target) - 1);
+    if (e.key === 'ArrowRight') go(Math.round(target) + 1);
+  });
+
+  layout(); updateCaption();
+
+  // ---------- background ink splatter ----------
+  const g = document.getElementById('splat');
+  const ns = 'http://www.w3.org/2000/svg';
+  [[340, 230], [60, 560], [300, 730]].forEach(([cx, cy]) => {
+    for (let i = 0; i < 14; i++) {
+      const c = document.createElementNS(ns, 'circle');
+      const d = Math.pow(Math.random(), 1.8) * 70, a = Math.random() * Math.PI * 2;
+      c.setAttribute('cx', cx + Math.cos(a) * d);
+      c.setAttribute('cy', cy + Math.sin(a) * d);
+      c.setAttribute('r', Math.max(.8, (7 - Math.random() * 6.5) * (1 - d / 90)));
+      g.appendChild(c);
+    }
   });
 })();
 </script>
