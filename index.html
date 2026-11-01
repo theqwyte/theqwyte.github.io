@@ -235,67 +235,82 @@
       <div class="dots" id="dots"></div>
       <button id="next" aria-label="Следующая башня"><svg viewBox="0 0 24 24"><path d="M9 4 L17 12 L9 20" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     </div>
-    <p class="hint">Листай башни и жми на ворота</p>
+    <p class="hint">Листай башни и жми на нужную</p>
   </section>
 </main>
 
 <script>
 (() => {
+  // Platform marks, drawn centred on (0,0), ~48px wide, so each tower reads at a glance
+  const LOGO = {
+    yt: `<rect x="-24" y="-17" width="48" height="34" rx="10" fill="#FF0033"/>
+         <path d="M-7 -9 L11 0 L-7 9 Z" fill="#fff"/>`,
+    tt: (() => {
+      const note = c => `<path d="M3 -18 V8 a8 8 0 1 1 -8 -8" stroke="${c}" stroke-width="6" fill="none" stroke-linecap="round"/>
+                         <path d="M3 -18 C4.5 -11 9 -8 15 -8" stroke="${c}" stroke-width="6" fill="none" stroke-linecap="round"/>`;
+      return `<g transform="translate(-2 -2)">${note('#25F4EE')}</g>
+              <g transform="translate(2 2)">${note('#FE2C55')}</g>${note('#fff')}`;
+    })(),
+    tg: `<circle r="24" fill="#29A9EB"/>
+         <path d="M-13 -1 L12 -11 Q14 -11.5 13.5 -9 L9 12 Q8.4 14 6.5 12.8 L0 8 L-3.5 11.5 Q-5 12.5 -5 10.5 L-5 4.5 L7 -6 L-8 3 L-13 1.5 Q-15 0.5 -13 -1 Z" fill="#fff"/>`,
+    at: `<circle r="24" fill="var(--gold)"/>
+         <text y="11" text-anchor="middle" font-family="Kanit, sans-serif" font-weight="800" font-size="34" fill="#050505">@</text>`,
+  };
+
   const towers = [
-    { name: 'YouTube',  sub: 'Полные видео и разборы',      href: 'https://youtube.com/@qwyte',       glow: '#E8B11C',
-      icon: '<path d="M-9 -12 L13 0 L-9 12 Z" fill="currentColor"/>' },
-    { name: 'TikTok',   sub: 'Короткие моменты из каток',   href: 'https://www.tiktok.com/@TheQwyte', glow: '#e3402f',
-      icon: '<path d="M2 -14 V5 a6 6 0 1 1 -6 -6" stroke="currentColor" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M2 -14 C3 -8 7 -6 12 -6" stroke="currentColor" stroke-width="4" fill="none" stroke-linecap="round"/>' },
-    { name: 'Telegram', sub: 'Новости канала и анонсы',     href: 'https://t.me/TheQwyte',            glow: '#6cc4e8',
-      icon: '<path d="M-14 -1 L14 -12 L8 13 L-1 5 L-4 12 L-5 4 Z" stroke="currentColor" stroke-width="3" stroke-linejoin="round" fill="none"/>' },
-    { name: 'Сотрудничество', sub: 'Реклама и коллабы: @qwyt3', href: 'https://t.me/qwyt3',          glow: '#d9b46a',
-      icon: '<path d="M-14 2 L-6 -6 L0 -2 L6 -6 L14 2 M-6 -6 L-12 0 M6 -6 L12 0 M-8 4 L-2 10 M-3 1 L3 7 M2 -2 L8 4" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>' },
+    { name: 'YouTube',        sub: 'Полные видео и разборы',     href: 'https://youtube.com/@qwyte',       glow: '#E8B11C', logo: LOGO.yt },
+    { name: 'TikTok',         sub: 'Короткие моменты из каток',  href: 'https://www.tiktok.com/@TheQwyte', glow: '#ff3b5c', logo: LOGO.tt },
+    { name: 'Telegram',       sub: 'Новости канала и анонсы',    href: 'https://t.me/TheQwyte',            glow: '#4cc0f0', logo: LOGO.tg },
+    { name: 'Сотрудничество', sub: 'Реклама и коллабы: @qwyt3',  href: 'https://t.me/qwyt3',               glow: '#d9b46a', logo: LOGO.at },
   ];
   const N = towers.length;
 
-  // ---------- tower SVG (original pagoda-style silhouette) ----------
-  const roof = (y, half, lift) =>
-    `<path d="M${85 - half} ${y} Q${85 - half * .55} ${y - 6} 85 ${y - lift} Q${85 + half * .55} ${y - 6} ${85 + half} ${y}
-      L${85 + half - 12} ${y + 8} L${85 - half + 12} ${y + 8} Z"
-      fill="#0a0807" stroke="var(--gold)" stroke-width="2.2" stroke-linejoin="round"/>`;
-
+  // ---------- tower SVG: carved stone obelisk with a crown and an emblem medallion ----------
   const towerSVG = (t, i) => `
     <svg viewBox="0 0 170 340" aria-hidden="true">
       <defs>
         <radialGradient id="g${i}" cx="50%" cy="50%" r="50%">
-          <stop offset="0" stop-color="${t.glow}" stop-opacity=".75"/>
+          <stop offset="0" stop-color="${t.glow}" stop-opacity=".8"/>
           <stop offset=".5" stop-color="${t.glow}" stop-opacity=".25"/>
           <stop offset="1" stop-color="${t.glow}" stop-opacity="0"/>
         </radialGradient>
       </defs>
+
+      <!-- aura behind the emblem -->
+      <ellipse cx="85" cy="176" rx="80" ry="70" fill="url(#g${i})" opacity=".35"/>
+
       <g filter="url(#stone)">
-        <!-- plinth -->
-        <path d="M8 340 L14 316 L156 316 L162 340 Z" fill="#1a1613"/>
-        <!-- tier 1 -->
-        <rect x="30" y="228" width="110" height="90" fill="url(#wall)"/>
-        ${roof(226, 74, 22)}
-        <!-- tier 2 -->
-        <rect x="42" y="150" width="86" height="70" fill="url(#wall)"/>
-        ${roof(148, 60, 18)}
-        <!-- tier 3 -->
-        <rect x="54" y="88" width="62" height="56" fill="url(#wall)"/>
-        ${roof(86, 46, 16)}
-        <!-- spire -->
-        <path d="M85 18 L92 70 L78 70 Z" fill="#0a0807" stroke="var(--gold)" stroke-width="2"/>
-        <circle cx="85" cy="16" r="5" fill="${t.glow}"/>
-        <!-- stone joints -->
-        <path d="M30 258 H140 M30 288 H140 M42 178 H128 M42 202 H128 M54 112 H116" stroke="#0e0c0a" stroke-width="2" opacity=".6"/>
-        <!-- windows -->
-        <rect x="76" y="100" width="18" height="26" rx="9" fill="${t.glow}" opacity=".55"/>
+        <!-- steps -->
+        <rect x="8" y="320" width="154" height="20" fill="#120f0c"/>
+        <rect x="22" y="304" width="126" height="17" fill="#1f1a15"/>
+        <path d="M22 304 H148" stroke="var(--gold)" stroke-width="1.5" opacity=".7"/>
+        <!-- shaft -->
+        <path d="M40 304 L52 94 L118 94 L130 304 Z" fill="url(#wall)"/>
+        <!-- carved grooves -->
+        <path d="M60 132 L56 236 M110 132 L114 236 M58 248 L55 300 M112 248 L115 300"
+              stroke="#0b0907" stroke-width="3" opacity=".8"/>
+        <path d="M51 150 H119 M49 214 H121 M47 270 H123" stroke="#0b0907" stroke-width="1.5" opacity=".5"/>
+        <!-- bands -->
+        <rect x="45" y="118" width="80" height="11" fill="#0a0807" stroke="var(--gold)" stroke-width="1.6"/>
+        <rect x="40" y="236" width="90" height="11" fill="#0a0807" stroke="var(--gold)" stroke-width="1.6"/>
+        <!-- crown -->
+        <path d="M40 98 L45 64 L58 82 L70 44 L85 70 L100 44 L112 82 L125 64 L130 98 Z"
+              fill="#0a0807" stroke="var(--gold)" stroke-width="2.2" stroke-linejoin="round"/>
       </g>
-      <!-- gate glow -->
-      <ellipse class="gate-glow" cx="85" cy="318" rx="70" ry="26" fill="url(#g${i})"/>
+
+      <!-- flame on top -->
+      <ellipse cx="85" cy="40" rx="22" ry="22" fill="url(#g${i})"/>
+      <path d="M85 26 C92 36 92 44 85 50 C78 44 78 36 85 26 Z" fill="${t.glow}"/>
+
+      <!-- emblem medallion -->
+      <circle cx="85" cy="180" r="40" fill="#0a0807" stroke="var(--gold)" stroke-width="3"/>
+      <circle cx="85" cy="180" r="34" fill="none" stroke="var(--gold)" stroke-width="1" opacity=".45"/>
+      <g transform="translate(85 180)">${t.logo}</g>
+
       <!-- gate -->
-      <path class="gate" d="M62 318 V280 Q62 256 85 256 Q108 256 108 280 V318 Z" fill="${t.glow}"/>
-      <path d="M62 318 V280 Q62 256 85 256 Q108 256 108 280 V318" fill="none" stroke="#0a0807" stroke-width="4"/>
-      <!-- hanging banner with icon -->
-      <path d="M60 158 H110 V206 L85 196 L60 206 Z" fill="var(--blood)" filter="url(#stone)"/>
-      <g transform="translate(85 178) scale(.9)" style="color:var(--paper)">${t.icon}</g>
+      <ellipse class="gate-glow" cx="85" cy="306" rx="70" ry="22" fill="url(#g${i})"/>
+      <path class="gate" d="M66 304 V276 Q66 256 85 256 Q104 256 104 276 V304 Z" fill="${t.glow}"/>
+      <path d="M66 304 V276 Q66 256 85 256 Q104 256 104 276 V304" fill="none" stroke="#0a0807" stroke-width="4"/>
     </svg>`;
 
   // ---------- build ----------
@@ -410,7 +425,7 @@
     document.body.style.setProperty('--glow', t.glow);
     document.body.classList.add('entering');
     // fly the camera through the gate (gate sits at ~84% height of the tower)
-    el.style.transformOrigin = '50% 84%';
+    el.style.transformOrigin = '50% 85%';
     requestAnimationFrame(() => {
       el.style.transform = 'translateZ(820px) scale(1.4)';
       el.style.filter = 'brightness(1.3)';
